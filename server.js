@@ -5,8 +5,11 @@ var port = process.env.PORT || 1080;
 
 var app = require('express')();
 
-require('./index').initApp(app)
+require('./lib/db')(function(db) {
 
-app.listen(port, function() {
-  console.log('gandalf does magic on ' + port);
+  require('./index').initApp(app, db)
+
+  app.listen(port, function() {
+    console.log('gandalf does magic on ' + port);
+  });
 });

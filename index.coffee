@@ -1,17 +1,8 @@
 
-fs = require 'fs'
-path = require 'path'
 cors = require 'cors'
 bodyParser = require 'body-parser'
 
-controllers = require "./lib/controllers"
-upload = require "./lib/upload"
-
-if process.env.BTUSPLUGIN
-  plugin = require process.env.BTUSPLUGIN
-else
-  plugin = require "./lib/defaultplugin"
-
+Controllers = require "./lib/controllers"
 
 corsOpts =
   methods: ["HEAD", "PATCH", "POST", "OPTIONS", "GET"]
@@ -21,20 +12,12 @@ corsOpts =
   ]
   exposedHeaders: ["Location", "Offset"]
 
-filesDir = process.env.FILESDIR || path.join(__dirname, 'files')
 
+exports.initApp = (app, db) ->
 
-exports.initApp = (app) ->
-
-  if not fs.existsSync(filesDir)
-    fs.mkdirSync(filesDir)
   serverString = process.env.SERVERSTRING || 'BrewTUS/0.1'
 
-  app.use (req, res, next) ->
-    res.setHeader("Server", serverString)
-    res.locals.FILESDIR = filesDir
-    res.locals.plugin = plugin
-    next()
+  controllers = Controllers(db.models.upload)
 
   app.use cors(corsOpts)
 
@@ -42,10 +25,6 @@ exports.initApp = (app) ->
   app.head("/:id(*)", controllers.headFile)
   app.get("/:id(*)", controllers.getFile)
   app.patch("/:id(*)", controllers.patchFile)
-
-
-exports.serveTest = (app) ->
-  app.get("up.html", controllers.testUploadPage)
 
 
 exports.getInfo = (file, req, cb) ->

@@ -1,146 +1,169 @@
 
 fs = require "fs"
 path = require "path"
+uuid = require "node-uuid"
+sanitize = require "sanitize-filename"
+mkdirp = require "mkdirp"
+touch = require "touch"
 
-upload = require "./upload"
+FileInfo = require "./fileinfo"
 
+filesDir = process.env.FILESDIR || path.join(__dirname, 'files')
 
-exports.testUploadPage = (req, res, next) ->
-  fs.readFile path.join(__dirname , "/up.html"), "utf8", (err, data) ->
-    res.set
-      'Content-Type': 'text/html'
-      'Content-Length': data.length
-    res.send(data)
+if not fs.existsSync(filesDir)
+  fs.mkdirSync(filesDir)
 
+# creates name of the created file
+_getFileId = (req) ->
+  if req.query.filename or req.body.filename
+    fname = req.query.filename or req.body.filename
+    parts = fname.split('/')
+    for p in parts
+      p = sanitize(p)
+    return parts.join('/')
+  else
+    return uuid.v1()
 
-#GET MUST return Content-Length == Final-Length
-exports.getFile = (req, res, next) ->
-  return res.status(404).send("Not Found") unless req.params.id?
-
-  u = upload.Upload({files: res.locals.FILESDIR}, req.params.id)
-  status = u.load()
-  if status.error?
-    return res.status(status.error[0]).send(status.error[1])
-
-  if status.info.offset != status.info.finalLength
-    return res.status(404).send("Not Found")
-
-  res.setHeader "Content-Length", status.info.finalLength
-  u.stream().pipe(res)
-
-
-#Implements 6.1. File Creation
-exports.createFile = (req, res, next) ->
-
-  #6.1.3.1. POST
-  #The request MUST include a Final-Length header
-  unless req.headers["final-length"]?
-    return res.status(400).send("Final-Length Required")
-
-  finalLength = parseInt req.headers["final-length"]
-
-  #The value MUST be a non-negative integer.
-  if isNaN finalLength || finalLength < 0
-    return res.status(400).send("Final-Length Must be Non-Negative")
-
-  #generate fileId
-  fileId = res.locals.plugin.getFileId(req)
-
-  if fileId.indexOf('..') >= 0
-    return res.status(400).send("Bad fileName")
-
-  status = upload.
-    Upload({files: res.locals.FILESDIR}, fileId).create(finalLength)
-
-  if status.error?
-    return res.status(status.error[0]).send(status.error[1])
-
-  location = upload.getFileUrl(fileId, req)
-  res.setHeader "Location", location
-  res.status(201).send("Created")
+_getFileUrl = (fileId, req) ->
+  reqpath = req.originalUrl.split('?')[0]
+  if reqpath[reqpath.length-1] == '/'
+    return "#{req.protocol}://#{req.headers.host}#{reqpath}#{fileId}"
+  else
+    return "#{req.protocol}://#{req.headers.host}#{reqpath}/#{fileId}"
 
 
-#Implements 5.3.1. HEAD
-exports.headFile = (req, res, next) ->
-  return res.status(404).send("Not Found") unless req.params.id
+module.exports = (UploadModel) ->
 
-  status = upload.Upload({files: res.locals.FILESDIR}, req.params.id).load()
-  if status.error?
-    return res.status(status.error[0]).send(status.error[1])
-  info = status.info
+  _fileInfo = FileInfo(UploadModel)
 
-  res.setHeader "Offset", info.offset
-  res.setHeader "Connection", "close"
-  res.send("Ok")
+  #GET MUST return Content-Length == Final-Length
+  getFile: (req, res, next) ->
+    return res.status(404).send("Not Found") unless req.params.id?
+
+    _fileInfo.load req.params.id, (err, fleInfo)->
+      return res.status(400).send(err) if err
+
+      if fleInfo.offset != fleInfo.final_length
+        return res.status(404).send("Not Found")
+
+      res.setHeader "Content-Length", fleInfo.final_length
+      stream = fs.createReadStream(path.join(filesDir, req.params.id))
+      stream.pipe(res)
 
 
-#Implements 5.3.2. PATCH
-exports.patchFile = (req, res, next) ->
-  return res.status(404).send("file id not provided") unless req.params.id
+  #Implements 6.1. File Creation
+  createFile: (req, res, next) ->
 
-  filePath = path.join res.locals.FILESDIR, req.params.id
-  return res.status(404).send("Not Found") unless fs.existsSync filePath
+    #6.1.3.1. POST
+    #The request MUST include a Final-Length header
+    unless req.headers["final-length"]?
+      return res.status(400).send("Final-Length Required")
 
-  #All PATCH requests MUST use Content-Type: application/offset+octet-stream.
-  unless req.headers["content-type"]?
-    return res.status(400).send("Content-Type Required")
+    finalLength = parseInt req.headers["final-length"]
 
-  unless req.headers["content-type"] is "application/offset+octet-stream"
-    return res.status(400).send("Content-Type Invalid")
+    #The value MUST be a non-negative integer.
+    if isNaN finalLength || finalLength < 0
+      return res.status(400).send("Final-Length Must be Non-Negative")
 
-  #5.2.1. Offset
-  return res.status(400).send("Offset Required") unless req.headers["offset"]?
+    #generate fileId
+    fileId = _getFileId(req)
 
-  #The value MUST be an integer that is 0 or larger
-  offsetIn = parseInt req.headers["offset"]
-  if isNaN offsetIn or offsetIn < 0
-    return res.status(400).send("Offset Invalid")
+    if fileId.indexOf('..') >= 0
+      return res.status(400).send("Bad fileName")
 
-  unless req.headers["content-length"]?
-    return res.status(400).send("Content-Length Required")
+    _fileInfo.create fileId, finalLength, (err, fileInfo)->
+      return res.status(400).send(err) if err
 
-  contentLength = parseInt req.headers["content-length"]
-  if isNaN contentLength or contentLength < 1
-    return res.status(400).send("Invalid Content-Length")
+      fileAbs = path.join(filesDir, fileId)
+      folder = path.dirname(fileAbs)
+      mkdirp.sync folder unless fs.existsSync folder
+      touch fileAbs, {}, (err) ->
+        return res.status(400).send(err) if err
 
-  u = upload.Upload({files: res.locals.FILESDIR}, req.params.id)
-  status = u.load()
-  if status.error?
-    return res.status(status.error[0]).send(status.error[1])
-  info = status.info
+        location = _getFileUrl(fileId, req)
+        res.setHeader "Location", location
+        res.status(201).send("Created")
 
-  return res.status(400).send("Invalid Offset") if offsetIn > info.offset
 
-  #Open file for writing
-  ws = fs.createWriteStream filePath, {flags: "r+", start: offsetIn}
+  #Implements 5.3.1. HEAD
+  headFile: (req, res, next) ->
+    return res.status(404).send("Not Found") unless req.params.id
 
-  unless ws?
-    return res.status(500).send("unable to create file #{filePath}")
+    _fileInfo.load req.params.id, (err, fleInfo)->
+      return res.status(400).send(err) if err
 
-  info.offset = offsetIn
-  info.state = "patched"
-  info.patchedOn = Date.now()
-  info.bytesReceived = 0
+      res.setHeader "Offset", fleInfo.offset
+      res.setHeader "Connection", "close"
+      res.send("Ok")
 
-  req.pipe ws
 
-  req.on "data", (buffer) ->
-    info.bytesReceived += buffer.length
-    info.offset +=  buffer.length
-    if info.offset > info.finalLength
-      return res.status(500).send("Exceeded Final-Length")
-    if info.received > contentLength
-      return res.status(500).send("Exceeded Content-Length")
+  #Implements 5.3.2. PATCH
+  patchFile: (req, res, next) ->
+    return res.status(404).send("file id not provided") unless req.params.id
 
-  req.on "end", ->
-    chunkError = res.locals.plugin.validateChunk(req, info)
-    return res.status(400).send("Invalid Chunk: #{chunkError}") if chunkError
-    res.send("Ok") unless res.headersSent
-    u.save(info)
+    filePath = path.join filesDir, req.params.id
+    return res.status(404).send("Not Found") unless fs.existsSync filePath
 
-  req.on "close", ->
-    ws.end()
+    #All PATCH requests MUST use Content-Type: application/offset+octet-stream.
+    unless req.headers["content-type"]?
+      return res.status(400).send("Content-Type Required")
 
-  ws.on "error", (e) ->
-    #Send response
-    res.status(500).send("File Error: #{e}")
+    unless req.headers["content-type"] is "application/offset+octet-stream"
+      return res.status(400).send("Content-Type Invalid")
+
+    #5.2.1. Offset
+    return res.status(400).send("Offset Required") unless req.headers["offset"]?
+
+    #The value MUST be an integer that is 0 or larger
+    offsetIn = parseInt req.headers["offset"]
+    if isNaN offsetIn or offsetIn < 0
+      return res.status(400).send("Offset Invalid")
+
+    unless req.headers["content-length"]?
+      return res.status(400).send("Content-Length Required")
+
+    contentLength = parseInt req.headers["content-length"]
+    if isNaN contentLength or contentLength < 1
+      return res.status(400).send("Invalid Content-Length")
+
+    _fileInfo.load req.params.id, (err, info)->
+      return res.status(400).send(err) if err
+
+      return res.status(400).send("Invalid Offset") if offsetIn > info.offset
+
+      #Open file for writing
+      filePath = path.join(filesDir, req.params.id)
+      ws = fs.createWriteStream filePath, {flags: "r+", start: offsetIn}
+
+      unless ws?
+        return res.status(500).send("unable to create file fo #{req.params.id}")
+
+      info.offset = offsetIn
+      info.state = 1
+      info.patchedOn = Date.now()
+      info.bytesReceived = 0
+
+      req.pipe ws
+
+      req.on "data", (buffer) ->
+        info.bytesReceived += buffer.length
+        info.offset +=  buffer.length
+        if info.offset > info.finalLength
+          return res.status(500).send("Exceeded Final-Length")
+        if info.received > contentLength
+          return res.status(500).send("Exceeded Content-Length")
+
+      req.on "end", ->
+        # chunkError = res.locals.plugin.validateChunk(req, info)
+        # if chunkError
+        #   return res.status(400).send("Invalid Chunk: #{chunkError}")
+        _fileInfo.save info, (err, saved)->
+          return res.status(400).send(err) if err
+          res.send("Ok") unless res.headersSent
+
+      req.on "close", ->
+        ws.end()
+
+      ws.on "error", (e) ->
+        #Send response
+        res.status(500).send("File Error: #{e}")

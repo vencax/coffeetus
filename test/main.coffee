@@ -13,16 +13,20 @@ process.env.FILESDIR = path.join(__dirname, '_testfiles')
 describe "app", ->
 
   appModule = require(__dirname + '/../index')
+  Db = require(__dirname + "/../lib/db")
   g = {}
 
   before (done) ->
 
     g.app = require('express')()
-    appModule.initApp(g.app)
 
-    g.server = g.app.listen port, (err) ->
+    Db (err, db)->
       return done(err) if err
-      done()
+      appModule.initApp(g.app, db)
+
+      g.server = g.app.listen port, (err) ->
+        return done(err) if err
+        done()
 
   after (done) ->
     rimraf.sync(process.env.FILESDIR)
