@@ -1,7 +1,7 @@
 # coffeetus
 
 
-[![build status](https://travis-ci.org/vencax/brewtus.svg)](https://travis-ci.org/vencax/brewtus)
+[![build status](https://travis-ci.org/vencax/coffeetus.svg)](https://travis-ci.org/vencax/coffeetus)
 
 
 [TUS Protocol 1.0.0](http://www.tus.io/protocols/resumable-upload.html) Server Implementation
