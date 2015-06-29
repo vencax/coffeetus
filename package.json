@@ -1,30 +1,31 @@
 {
-  "name": "brewtus",
+  "name": "coffeetus",
   "author": "Vaclav Klecanda <vencax@vxk.com>",
-  "description": "TUS Server Implementation for coffee lovers",
-  "version": "0.2.1",
-  "main": "brewtus.coffee",
+  "description": "TUS Server Implementation for TUS 1.0.0",
+  "version": "1.0.0",
+  "main": "server.js",
   "dependencies": {
-    "body-parser": "^1.12.4",
-    "coffee-script": "latest",
+    "coffee-script": "^1.9.3",
     "cors": "^2.5.3",
     "express": "^4.11.1",
     "mkdirp": "^0.5.0",
-    "node-uuid": "latest",
+    "node-uuid": "^1.4.3",
     "sanitize-filename": "^1.1.1",
     "sequelize": "^3.3.2",
+    "sqlite3": "^3.0.8",
     "touch": "0.0.3"
   },
   "keywords": [
     "upload",
-    "tus"
+    "tus",
+    "node", "coffee"
   ],
-  "repository": "git://github.com/vayam/brewtus",
+  "repository": "https://github.com/vencax/coffeetus",
   "engines": {
     "node": "0.10.x"
   },
   "scripts": {
-    "start": "export NODE_ENV=production && node main.js",
+    "start": "export NODE_ENV=production && node server.js",
     "test": "grunt test"
   },
   "devDependencies": {
@@ -40,7 +41,6 @@
     "matchdep": "^0.3.0",
     "request": "^2.51.0",
     "rimraf": "^2.2.8",
-    "should": "^4.3.1",
-    "sqlite3": "^3.0.8"
+    "should": "^4.3.1"
   }
 }
