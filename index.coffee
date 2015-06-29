@@ -1,6 +1,5 @@
 
 cors = require 'cors'
-bodyParser = require 'body-parser'
 
 Controllers = require "./lib/controllers"
 
@@ -12,19 +11,21 @@ corsOpts =
   ]
   exposedHeaders: ["Location", "Offset"]
 
+supportedExtensions = [
+  'creation'
+]
+
 
 exports.initApp = (app, db) ->
-
-  serverString = process.env.SERVERSTRING || 'BrewTUS/0.1'
 
   controllers = Controllers(db.models.upload)
 
   app.use cors(corsOpts)
 
-  app.post("/", bodyParser.json(), controllers.createFile)
-  app.head("/:id(*)", controllers.headFile)
+  app.post("/", controllers.checkVersion, controllers.createFile)
+  app.head("/:id(*)", controllers.checkVersion, controllers.headFile)
   app.get("/:id(*)", controllers.getFile)
-  app.patch("/:id(*)", controllers.patchFile)
+  app.patch("/:id(*)", controllers.checkVersion, controllers.patchFile)
 
 
 exports.getInfo = (file, req, cb) ->

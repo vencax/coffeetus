@@ -1,35 +1,20 @@
 
 fs = require "fs"
 path = require "path"
-uuid = require "node-uuid"
-sanitize = require "sanitize-filename"
 mkdirp = require "mkdirp"
 touch = require "touch"
 
 FileInfo = require "./fileinfo"
+Utils = require "./utils"
 
 filesDir = process.env.FILESDIR || path.join(__dirname, 'files')
 
 if not fs.existsSync(filesDir)
   fs.mkdirSync(filesDir)
 
-# creates name of the created file
-_getFileId = (req) ->
-  if req.query.filename or req.body.filename
-    fname = req.query.filename or req.body.filename
-    parts = fname.split('/')
-    for p in parts
-      p = sanitize(p)
-    return parts.join('/')
-  else
-    return uuid.v1()
-
-_getFileUrl = (fileId, req) ->
-  reqpath = req.originalUrl.split('?')[0]
-  if reqpath[reqpath.length-1] == '/'
-    return "#{req.protocol}://#{req.headers.host}#{reqpath}#{fileId}"
-  else
-    return "#{req.protocol}://#{req.headers.host}#{reqpath}/#{fileId}"
+supportedVersions = [
+  '1.0.0'
+]
 
 
 module.exports = (UploadModel) ->
@@ -54,24 +39,24 @@ module.exports = (UploadModel) ->
   #Implements 6.1. File Creation
   createFile: (req, res, next) ->
 
-    #6.1.3.1. POST
-    #The request MUST include a Final-Length header
-    unless req.headers["final-length"]?
-      return res.status(400).send("Final-Length Required")
+    if req.headers["upload-length"] == undefined
+      return res.status(400).send("upload-length Required")
 
-    finalLength = parseInt req.headers["final-length"]
+    uploadLength = parseInt req.headers["upload-length"]
 
     #The value MUST be a non-negative integer.
-    if isNaN finalLength || finalLength < 0
-      return res.status(400).send("Final-Length Must be Non-Negative")
+    if isNaN(uploadLength) || uploadLength < 0
+      return res.status(400).send("upload-length Must be Non-Negative integer")
+
+    metadata = Utils.parseMetadata(req)
 
     #generate fileId
-    fileId = _getFileId(req)
+    fileId = Utils.getFileId(metadata)
 
     if fileId.indexOf('..') >= 0
       return res.status(400).send("Bad fileName")
 
-    _fileInfo.create fileId, finalLength, (err, fileInfo)->
+    _fileInfo.create fileId, uploadLength, (err, fileInfo)->
       return res.status(400).send(err) if err
 
       fileAbs = path.join(filesDir, fileId)
@@ -80,8 +65,9 @@ module.exports = (UploadModel) ->
       touch fileAbs, {}, (err) ->
         return res.status(400).send(err) if err
 
-        location = _getFileUrl(fileId, req)
+        location = Utils.getFileUrl(fileId, req)
         res.setHeader "Location", location
+        res.setHeader "tus-resumable", "1.0.0"
         res.status(201).send("Created")
 
 
@@ -89,10 +75,13 @@ module.exports = (UploadModel) ->
   headFile: (req, res, next) ->
     return res.status(404).send("Not Found") unless req.params.id
 
-    _fileInfo.load req.params.id, (err, fleInfo)->
+    _fileInfo.load req.params.id, (err, info)->
       return res.status(400).send(err) if err
+      return res.status(404).send(err) if not info
 
-      res.setHeader "Offset", fleInfo.offset
+      res.setHeader "upload-offset", info.offset
+      res.setHeader "cache-control", "no-store"
+      res.setHeader "tus-resumable", "1.0.0"
       res.setHeader "Connection", "close"
       res.send("Ok")
 
@@ -112,24 +101,26 @@ module.exports = (UploadModel) ->
       return res.status(400).send("Content-Type Invalid")
 
     #5.2.1. Offset
-    return res.status(400).send("Offset Required") unless req.headers["offset"]?
+    unless req.headers["upload-offset"]?
+      return res.status(400).send("upload-offset header Required")
 
     #The value MUST be an integer that is 0 or larger
-    offsetIn = parseInt req.headers["offset"]
-    if isNaN offsetIn or offsetIn < 0
-      return res.status(400).send("Offset Invalid")
+    offsetIn = parseInt req.headers["upload-offset"]
+    if isNaN(offsetIn) or offsetIn < 0
+      return res.status(400).send("upload-offset header Invalid")
 
     unless req.headers["content-length"]?
       return res.status(400).send("Content-Length Required")
 
     contentLength = parseInt req.headers["content-length"]
-    if isNaN contentLength or contentLength < 1
+    if isNaN(contentLength) or contentLength < 1
       return res.status(400).send("Invalid Content-Length")
 
     _fileInfo.load req.params.id, (err, info)->
       return res.status(400).send(err) if err
+      return res.status(404).send(err) if not info
 
-      return res.status(400).send("Invalid Offset") if offsetIn > info.offset
+      return res.status(409).send("Conflict") if offsetIn > info.offset
 
       #Open file for writing
       filePath = path.join(filesDir, req.params.id)
@@ -159,7 +150,10 @@ module.exports = (UploadModel) ->
         #   return res.status(400).send("Invalid Chunk: #{chunkError}")
         _fileInfo.save info, (err, saved)->
           return res.status(400).send(err) if err
-          res.send("Ok") unless res.headersSent
+          unless res.headersSent
+            res.setHeader "Upload-Offset", info.offset
+            res.setHeader "tus-resumable", "1.0.0"
+            res.status(204).end()
 
       req.on "close", ->
         ws.end()
@@ -167,3 +161,11 @@ module.exports = (UploadModel) ->
       ws.on "error", (e) ->
         #Send response
         res.status(500).send("File Error: #{e}")
+
+
+  checkVersion: (req, res, next) ->
+    header = req.headers["tus-resumable"]
+    if header == undefined or header not in supportedVersions
+      res.setHeader "Tus-Version", supportedVersions.join(',')
+      return res.status(412).send("Precondition Failed")
+    next()

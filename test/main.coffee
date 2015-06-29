@@ -4,6 +4,8 @@ http = require('http')
 fs = require('fs')
 path = require('path')
 rimraf = require 'rimraf'
+express = require('express')
+One00 = require './1.0.0'
 
 port = process.env.PORT || 3333
 process.env.NODE_ENV = 'devel'
@@ -18,7 +20,7 @@ describe "app", ->
 
   before (done) ->
 
-    g.app = require('express')()
+    g.app = express()
 
     Db (err, db)->
       return done(err) if err
@@ -36,4 +38,5 @@ describe "app", ->
   # run the rest of tests
   baseurl = "http://127.0.0.1:#{port}"
 
-  require('./uploads')(g.db, baseurl)
+  # require('./uploads')(g.db, baseurl)
+  One00(g.db, baseurl)
