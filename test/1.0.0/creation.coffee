@@ -21,7 +21,7 @@ module.exports = (addr, g) ->
       should.exist res.headers['tus-version']
       res.headers['tus-version'].should.eql '1.0.0'
       should.exist res.headers['tus-extension']
-      res.headers['tus-extension'].should.eql 'creation'
+      res.headers['tus-extension'].should.eql 'creation,termination'
       done()
 
 
@@ -121,7 +121,7 @@ module.exports = (addr, g) ->
 
       res.statusCode.should.eql 201
       should.exist res.headers['location']
-      locationWithPath = res.headers['location']
+      g.locationWithPath = res.headers['location']
       done()
     req.end
 

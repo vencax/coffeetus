@@ -1,6 +1,7 @@
 
 Core = require './core'
 Creation = require './creation'
+Termination = require './termination'
 
 
 module.exports = (db, addr) ->
@@ -12,3 +13,4 @@ module.exports = (db, addr) ->
 
   Creation(addr, g)
   Core(g)
+  Termination(addr, g)

@@ -21,3 +21,7 @@ module.exports = (UploadModel) ->
   load: (id, cb)->
     UploadModel.find({where: {id: id}}).then (found)->
       cb(null, found)
+
+  remove: (info, cb)->
+    info.destroy().then ()->
+      cb(null)

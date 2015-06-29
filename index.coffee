@@ -24,6 +24,7 @@ exports.initApp = (app, db) ->
   app.head("/:id(*)", controllers.checkVersion, controllers.headFile)
   app.get("/:id(*)", controllers.getFile)
   app.patch("/:id(*)", controllers.checkVersion, controllers.patchFile)
+  app.delete("/:id(*)", controllers.checkVersion, controllers.terminate)
 
 
 exports.getInfo = (file, req, cb) ->

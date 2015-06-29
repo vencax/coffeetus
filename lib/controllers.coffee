@@ -171,8 +171,24 @@ module.exports = (UploadModel) ->
     next()
 
 
+  terminate: (req, res, next) ->
+    return res.status(404).send("Not Found") unless req.params.id
+
+    _fileInfo.load req.params.id, (err, info)->
+      return res.status(400).send(err) if err
+      return res.status(404).send('File not found') if not info
+
+      _fileInfo.remove info, (err)->
+        filePath = path.join(filesDir, req.params.id)
+        fs.unlink filePath, (err)->
+          return res.status(400).send(err) if err
+
+          res.setHeader "Tus-Resumable", "1.0.0"
+          return res.status(204).end()
+
+
   serverInfo: (req, res, next) ->
     res.setHeader "Tus-Version", supportedVersions.join(',')
     res.setHeader "Tus-Resumable", "1.0.0"
-    res.setHeader "Tus-Extension", "creation"
+    res.setHeader "Tus-Extension", "creation,termination"
     return res.status(204).end()
