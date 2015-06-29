@@ -7,18 +7,16 @@ corsOpts =
   methods: ["HEAD", "PATCH", "POST", "OPTIONS", "GET"]
   allowedHeaders: [
     "Origin", "X-Requested-With", "Content-Type", "Accept",
-    "Final-Length", "Offset", "Authorization"
+    "Upload-Length", "Upload-Offset", "Authorization"
   ]
-  exposedHeaders: ["Location", "Offset"]
-
-supportedExtensions = [
-  'creation'
-]
+  exposedHeaders: ["Location", "Upload-Offset"]
 
 
 exports.initApp = (app, db) ->
 
   controllers = Controllers(db.models.upload)
+
+  app.options('/', controllers.serverInfo)
 
   app.use cors(corsOpts)
 

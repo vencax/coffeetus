@@ -7,6 +7,24 @@ request = require('request').defaults({timeout: 5000})
 module.exports = (addr, g) ->
 
 
+  it "must return appropriate server info for OPTIONS req", (done) ->
+    options =
+      url: "#{addr}/"
+      method: 'OPTIONS',
+      headers:
+        'Tus-Resumable': '1.0.0'
+    req = request options, (err, res, body) ->
+      return done(err) if err
+
+      res.statusCode.should.eql 204
+      body.should.eql ''
+      should.exist res.headers['tus-version']
+      res.headers['tus-version'].should.eql '1.0.0'
+      should.exist res.headers['tus-extension']
+      res.headers['tus-extension'].should.eql 'creation'
+      done()
+
+
   it "must not create a new file without Upload-Length header", (done) ->
     options =
       url: "#{addr}/"

@@ -169,3 +169,10 @@ module.exports = (UploadModel) ->
       res.setHeader "Tus-Version", supportedVersions.join(',')
       return res.status(412).send("Precondition Failed")
     next()
+
+
+  serverInfo: (req, res, next) ->
+    res.setHeader "Tus-Version", supportedVersions.join(',')
+    res.setHeader "Tus-Resumable", "1.0.0"
+    res.setHeader "Tus-Extension", "creation"
+    return res.status(204).end()
