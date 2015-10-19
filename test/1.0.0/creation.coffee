@@ -8,12 +8,13 @@ module.exports = (addr, g) ->
 
 
   it "must return appropriate server info for OPTIONS req", (done) ->
-    options =
+
+    request
       url: "#{addr}/"
       method: 'OPTIONS',
       headers:
         'Tus-Resumable': '1.0.0'
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 204
@@ -26,33 +27,31 @@ module.exports = (addr, g) ->
 
 
   it "must not create a new file without Upload-Length header", (done) ->
-    options =
+
+    request
       url: "#{addr}/"
       method: 'POST',
       headers:
         'Content-Type': 'application/json'
         'Tus-Resumable': '1.0.0'
-
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 400
       should.not.exist res.headers['location']
       done()
 
-    req.end
-
 
   it "must not create a new file with unsuported tus version", (done) ->
-    options =
+
+    req = request
       url: "#{addr}/"
       method: 'POST',
       headers:
         'Content-Type': 'application/json'
         'Upload-Length': g.samplefile.length
         'Tus-Resumable': '1111.0.0'
-
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 412
@@ -66,15 +65,15 @@ module.exports = (addr, g) ->
 
 
   it "shall create a new file", (done) ->
-    options =
+
+    request
       url: "#{addr}/"
       method: 'POST',
       headers:
         'Content-Type': 'application/json'
         'Upload-Length': g.samplefile.length
         'Tus-Resumable': '1.0.0'
-
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 201
@@ -82,12 +81,12 @@ module.exports = (addr, g) ->
       should.exist res.headers['tus-resumable']
       g.location = res.headers['location']
       done()
-    req.end
 
 
   it "shall create a new file with custom filename", (done) ->
     fileName = 'customFileNNNName.txt'
-    options =
+
+    request
       url: "#{addr}/"
       method: 'POST',
       headers:
@@ -95,19 +94,18 @@ module.exports = (addr, g) ->
         'Upload-Metadata': 'filename ' + new Buffer(fileName).toString('base64')
         'Upload-Length': 123
         'Tus-Resumable': '1.0.0'
-
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 201
       should.exist res.headers['location']
       done()
-    req.end
 
 
   it "shall create a new file with custom filename in subfolder", (done) ->
     fileName = "sub1/sub2/testfile1.txt"
-    options =
+
+    req = request
       url: "#{addr}/"
       method: 'POST',
       headers:
@@ -115,20 +113,18 @@ module.exports = (addr, g) ->
         'Upload-Metadata': 'filename ' + new Buffer(fileName).toString('base64')
         'Upload-Length': g.samplefile2.length
         'Tus-Resumable': '1.0.0'
-
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 201
       should.exist res.headers['location']
       g.locationWithPath = res.headers['location']
       done()
-    req.end
 
 
   it "mustnot create a new file out of upload folder (usage ../..)", (done) ->
     badFileName = "../../testfile1.txt"
-    options =
+    request
       url: "#{addr}/"
       method: 'POST',
       headers:
@@ -136,11 +132,9 @@ module.exports = (addr, g) ->
         'Upload-Metadata': 'filename ' + new Buffer(badFileName).toString('base64')
         'Upload-Length': 123
         'Tus-Resumable': '1.0.0'
-
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 400
       should.not.exist res.headers['location']
       done()
-    req.end

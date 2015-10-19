@@ -12,7 +12,8 @@ module.exports = (g) ->
     chunksize = 128
 
     _send = (curr) ->
-      options =
+
+      req = request
         url: g.location
         method: 'PATCH',
         headers:
@@ -20,7 +21,7 @@ module.exports = (g) ->
           'Content-Length': chunksize
           'upload-offset': curr
           'Tus-Resumable': '1.0.0'
-      req = request options, (err, res, body) ->
+      , (err, res, body) ->
         return done(err) if err
 
         res.statusCode.should.eql 204
@@ -38,12 +39,13 @@ module.exports = (g) ->
 
 
   it "shall return current offset of the partial uploaded file", (done) ->
-    options =
+
+    request
       url: g.location
       method: 'HEAD',
       headers:
         'Tus-Resumable': '1.0.0'
-    request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 200
@@ -59,7 +61,8 @@ module.exports = (g) ->
 
 
   it "must not PATCH when wrong content-type", (done) ->
-    options =
+
+    req = request
       url: g.location
       method: 'PATCH',
       headers:
@@ -67,7 +70,7 @@ module.exports = (g) ->
         'Content-Length': g.samplefile.length - 512
         'upload-offset': 512
         'Tus-Resumable': '1.0.0'
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 400
@@ -78,14 +81,15 @@ module.exports = (g) ->
 
 
   it "must not PATCH when offset missing", (done) ->
-    options =
+
+    req = request
       url: g.location
       method: 'PATCH',
       headers:
         'Content-Type': 'application/offset+octet-stream'
         'Content-Length': g.samplefile.length - 512
         'Tus-Resumable': '1.0.0'
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 400
@@ -97,7 +101,8 @@ module.exports = (g) ->
 
 
   it "must not upload the rest of da file when offset wrong", (done) ->
-    options =
+
+    req = request
       url: g.location
       method: 'PATCH',
       headers:
@@ -105,7 +110,7 @@ module.exports = (g) ->
         'Content-Length': g.samplefile.length - 512
         'upload-offset': 'wrongoffset'
         'Tus-Resumable': '1.0.0'
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 400
@@ -117,7 +122,8 @@ module.exports = (g) ->
 
 
   it "must not PATCH when offset bigger then current", (done) ->
-    options =
+
+    req = request
       url: g.location
       method: 'PATCH',
       headers:
@@ -125,7 +131,7 @@ module.exports = (g) ->
         'Content-Length': g.samplefile.length - 512
         'upload-offset': 612
         'Tus-Resumable': '1.0.0'
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 409
@@ -137,7 +143,8 @@ module.exports = (g) ->
 
 
   it "shall upload the rest of da file", (done) ->
-    options =
+
+    req = request
       url: g.location
       method: 'PATCH',
       headers:
@@ -145,7 +152,7 @@ module.exports = (g) ->
         'Content-Length': g.samplefile.length - 512
         'upload-offset': 512
         'Tus-Resumable': '1.0.0'
-    req = request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       ###
@@ -162,12 +169,13 @@ module.exports = (g) ->
 
 
   it "shall return offset equal to file size", (done) ->
-    options =
+    
+    request
       url: g.location
       method: 'HEAD',
       headers:
         'Tus-Resumable': '1.0.0'
-    request options, (err, res, body) ->
+    , (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 200
