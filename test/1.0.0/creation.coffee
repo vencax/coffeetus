@@ -4,6 +4,9 @@ fs = require('fs')
 request = require('request').defaults({timeout: 5000})
 
 
+###
+https://github.com/tus/tus-resumable-upload-protocol/blob/1.0/protocol.md#creation
+###
 module.exports = (addr, g) ->
 
 

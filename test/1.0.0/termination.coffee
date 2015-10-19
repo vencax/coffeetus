@@ -3,7 +3,9 @@ should = require('should')
 fs = require('fs')
 request = require('request').defaults({timeout: 5000})
 
-
+###
+https://github.com/tus/tus-resumable-upload-protocol/blob/1.0/protocol.md#termination
+###
 module.exports = (addr, g) ->
 
   it "must not terminate not existing file", (done) ->
@@ -33,4 +35,19 @@ module.exports = (addr, g) ->
 
       res.statusCode.should.eql 204
       should.exist res.headers['tus-resumable']
+      done()
+
+
+  it "must not terminate a samplefile 2 (it is already gone)", (done) ->
+
+    request
+      url: "#{g.locationWithPath}"
+      method: 'DELETE',
+      headers:
+        'Tus-Resumable': '1.0.0'
+    , (err, res, body) ->
+      return done(err) if err
+
+      res.statusCode.should.eql 404
+      should.not.exist res.headers['location']
       done()
