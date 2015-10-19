@@ -14,7 +14,7 @@ through few environment variables:
 - PORT: port on this server will sit (default: 1080)
 - FILESDIR: path to folder where the files will land (default: 'files' folder within this project)
 - DATABASE_URL: [sequelize](http://sequelizejs.com/) connection string for storing info about particular uploads.
-  Default: in memory sqlite (DB discarded on stop)
+- TUS_MAX_SIZE_IN_MEGAS: (optional) max file size in megabytes
 
 
 ## Install
