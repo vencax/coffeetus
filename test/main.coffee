@@ -10,6 +10,7 @@ One00 = require './1.0.0'
 port = process.env.PORT || 3333
 process.env.NODE_ENV = 'devel'
 process.env.FILESDIR = path.join(__dirname, '_testfiles')
+process.env.TUS_MAX_SIZE_IN_MEGAS = 1
 
 # entry ...
 describe "app", ->

@@ -44,6 +44,22 @@ module.exports = (addr, g) ->
       should.not.exist res.headers['location']
       done()
 
+  it "must not create a new file for too big file", (done) ->
+
+    request
+      url: "#{addr}/"
+      method: 'POST',
+      headers:
+        'Content-Type': 'application/json'
+        'Tus-Resumable': '1.0.0'
+        'Upload-Length': parseInt(process.env.TUS_MAX_SIZE_IN_MEGAS) * 1024 * 1024 * 2
+    , (err, res, body) ->
+      return done(err) if err
+
+      res.statusCode.should.eql 413
+      should.not.exist res.headers['location']
+      done()
+
 
   it "must not create a new file with unsuported tus version", (done) ->
 

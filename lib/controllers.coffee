@@ -8,6 +8,7 @@ FileInfo = require "./fileinfo"
 Utils = require "./utils"
 
 filesDir = process.env.FILESDIR || path.join(__dirname, 'files')
+MAX_SIZE = parseInt(process.env.TUS_MAX_SIZE_IN_MEGAS) * 1024 * 1024 || null
 
 if not fs.existsSync(filesDir)
   fs.mkdirSync(filesDir)
@@ -47,6 +48,9 @@ module.exports = (UploadModel) ->
     #The value MUST be a non-negative integer.
     if isNaN(uploadLength) || uploadLength < 0
       return res.status(400).send("upload-length Must be Non-Negative integer")
+
+    if MAX_SIZE and uploadLength > MAX_SIZE
+      return res.status(413).send("Request Entity Too Large")
 
     metadata = Utils.parseMetadata(req)
 
@@ -191,4 +195,5 @@ module.exports = (UploadModel) ->
     res.setHeader "Tus-Version", supportedVersions.join(',')
     res.setHeader "Tus-Resumable", "1.0.0"
     res.setHeader "Tus-Extension", "creation,termination"
+    res.setHeader("Tus-Max-Size", MAX_SIZE) if MAX_SIZE
     return res.status(204).end()
