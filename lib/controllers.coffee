@@ -25,6 +25,9 @@ module.exports = (UploadModel) ->
   getInfo: (file, cb) ->
     _fileInfo.load file, (err, fleInfo) ->
       return cb(err) if err
+      return cb(null, null) if not fleInfo
+      fleInfo = fleInfo.toJSON()
+      fleInfo.filepath = path.join filesDir, file
       cb(null, fleInfo)
 
 
