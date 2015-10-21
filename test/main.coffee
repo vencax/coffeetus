@@ -21,15 +21,18 @@ describe "app", ->
 
   before (done) ->
 
-    g.app = express()
-
     Db (err, db)->
       return done(err) if err
 
       g.appModule = appModule(db)
-      g.appModule.initApp(g.app)
+      app = express()
+      g.appModule.initApp(app)
 
-      g.server = g.app.listen port, (err) ->
+      g.api = express()
+      g.base = "/fffiles"
+      g.api.use(g.base, app)
+
+      g.server = g.api.listen port, (err) ->
         return done(err) if err
         done()
 

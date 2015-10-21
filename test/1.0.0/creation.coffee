@@ -13,7 +13,7 @@ module.exports = (addr, g) ->
   it "must return appropriate server info for OPTIONS req", (done) ->
 
     request
-      url: "#{addr}/"
+      url: "#{addr}#{g.base}/"
       method: 'OPTIONS',
       headers:
         'Tus-Resumable': '1.0.0'
@@ -32,7 +32,7 @@ module.exports = (addr, g) ->
   it "must not create a new file without Upload-Length header", (done) ->
 
     request
-      url: "#{addr}/"
+      url: "#{addr}#{g.base}/"
       method: 'POST',
       headers:
         'Content-Type': 'application/json'
@@ -47,7 +47,7 @@ module.exports = (addr, g) ->
   it "must not create a new file for too big file", (done) ->
 
     request
-      url: "#{addr}/"
+      url: "#{addr}#{g.base}/"
       method: 'POST',
       headers:
         'Content-Type': 'application/json'
@@ -64,7 +64,7 @@ module.exports = (addr, g) ->
   it "must not create a new file with unsuported tus version", (done) ->
 
     req = request
-      url: "#{addr}/"
+      url: "#{addr}#{g.base}/"
       method: 'POST',
       headers:
         'Content-Type': 'application/json'
@@ -86,7 +86,7 @@ module.exports = (addr, g) ->
   it "shall create a new file", (done) ->
 
     request
-      url: "#{addr}/"
+      url: "#{addr}#{g.base}/"
       method: 'POST',
       headers:
         'Content-Type': 'application/json'
@@ -106,7 +106,7 @@ module.exports = (addr, g) ->
     fileName = 'customFileNNNName.txt'
 
     request
-      url: "#{addr}/"
+      url: "#{addr}#{g.base}/"
       method: 'POST',
       headers:
         'Content-Type': 'application/json'
@@ -125,7 +125,7 @@ module.exports = (addr, g) ->
   it "shall create a new file with custom filename in subfolder", (done) ->
 
     req = request
-      url: "#{addr}/"
+      url: "#{addr}#{g.base}/"
       method: 'POST',
       headers:
         'Content-Type': 'application/json'
@@ -141,30 +141,30 @@ module.exports = (addr, g) ->
       done()
 
 
-    it "must create an existing file again", (done) ->
+  it "must create an existing file again", (done) ->
 
-      request
-        url: "#{addr}/"
-        method: 'POST',
-        headers:
-          'Content-Type': 'application/json'
-          'Upload-Metadata': 'filename ' + new Buffer(fileName).toString('base64')
-          'Upload-Length': g.samplefile2.length
-          'Tus-Resumable': '1.0.0'
-      , (err, res, body) ->
-        return done(err) if err
+    request
+      url: "#{addr}#{g.base}/"
+      method: 'POST',
+      headers:
+        'Content-Type': 'application/json'
+        'Upload-Metadata': 'filename ' + new Buffer(fileName).toString('base64')
+        'Upload-Length': g.samplefile2.length
+        'Tus-Resumable': '1.0.0'
+    , (err, res, body) ->
+      return done(err) if err
 
-        res.statusCode.should.eql 201
-        should.exist res.headers['location']
-        should.exist res.headers['tus-resumable']
-        res.headers['location'].should.eql g.locationWithPath
-        done()
+      res.statusCode.should.eql 201
+      should.exist res.headers['location']
+      should.exist res.headers['tus-resumable']
+      res.headers['location'].should.eql g.locationWithPath
+      done()
 
 
   it "mustnot create a new file out of upload folder (usage ../..)", (done) ->
     badFileName = "../../testfile1.txt"
     request
-      url: "#{addr}/"
+      url: "#{addr}#{g.base}/"
       method: 'POST',
       headers:
         'Content-Type': 'application/json'

@@ -24,8 +24,7 @@ exports.getFileId = (metas) ->
 
 
 exports.getFileUrl = (fileId, req) ->
-  reqpath = req.originalUrl.split('?')[0]
-  if reqpath[reqpath.length-1] == '/'
-    return "#{reqpath}#{fileId}"
+  if req.baseUrl == '/'
+    return "/#{fileId}"
   else
-    return "#{reqpath}/#{fileId}"
+    return "#{req.baseUrl}/#{fileId}"

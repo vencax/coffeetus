@@ -70,11 +70,7 @@ module.exports = (UploadModel) ->
     if fileId.indexOf('..') >= 0
       return res.status(400).send("Bad fileName")
 
-    _fileInfo.load fileId, (err, info)->
-      return res.status(400).send(err) if err
-      # redir if already
-      return res.status(302).send(Utils.getFileUrl(fileId, req)) if info
-
+    _finishReq = ()->
       _fileInfo.create fileId, uploadLength, (err, fileInfo)->
         return res.status(400).send(err) if err
 
@@ -88,6 +84,16 @@ module.exports = (UploadModel) ->
           res.setHeader "Location", location
           res.setHeader "tus-resumable", "1.0.0"
           res.status(201).send("Created")
+
+
+    _fileInfo.load fileId, (err, info)->
+      return res.status(400).send(err) if err
+
+      if info
+        _fileInfo.remove info, ()->
+          return _finishReq()
+      else
+        _finishReq()
 
 
   #Implements 5.3.1. HEAD

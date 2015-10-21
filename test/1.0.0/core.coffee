@@ -181,8 +181,8 @@ module.exports = (addr, g) ->
       res.statusCode.should.eql 200
       should.exist res.headers['upload-offset']
       res.headers['upload-offset'].should.eql g.samplefile.length.toString()
-      g.filename = /\/(.*)/g.exec(g.location)[1]
-      filename = "#{process.env.FILESDIR}/#{g.location}"
+      g.filename = /\/fffiles\/(.*)/g.exec(g.location)[1]
+      filename = "#{process.env.FILESDIR}/#{g.filename}"
       fs.readFileSync(filename).toString().should.eql g.samplefile
       done()
 
