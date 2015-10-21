@@ -11,5 +11,5 @@ module.exports = (g, addr) ->
   g.samplefile2 = [1001 .. 2014].join('-')
 
   Creation(addr, g)
-  Core(g)
+  Core(addr, g)
   Termination(addr, g)

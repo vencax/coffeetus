@@ -27,7 +27,7 @@ module.exports = (addr, g) ->
   it "shall terminate a samplefile 2", (done) ->
 
     req = request
-      url: "#{g.locationWithPath}"
+      url: "#{addr}#{g.locationWithPath}"
       method: 'DELETE',
       headers:
         'Tus-Resumable': '1.0.0'
@@ -43,7 +43,7 @@ module.exports = (addr, g) ->
   it "must not terminate a samplefile 2 (it is already gone)", (done) ->
 
     request
-      url: "#{g.locationWithPath}"
+      url: "#{addr}#{g.locationWithPath}"
       method: 'DELETE',
       headers:
         'Tus-Resumable': '1.0.0'

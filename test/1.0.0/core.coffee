@@ -4,7 +4,7 @@ fs = require('fs')
 request = require('request').defaults({timeout: 5000})
 
 
-module.exports = (g) ->
+module.exports = (addr, g) ->
 
 
   it "shall upload first 512 bytes of sample file", (done) ->
@@ -14,7 +14,7 @@ module.exports = (g) ->
     _send = (curr) ->
 
       req = request
-        url: g.location
+        url: "#{addr}#{g.location}"
         method: 'PATCH',
         headers:
           'Content-Type': 'application/offset+octet-stream'
@@ -41,7 +41,7 @@ module.exports = (g) ->
   it "shall return current offset of the partial uploaded file", (done) ->
 
     request
-      url: g.location
+      url: "#{addr}#{g.location}"
       method: 'HEAD',
       headers:
         'Tus-Resumable': '1.0.0'
@@ -63,7 +63,7 @@ module.exports = (g) ->
   it "must not PATCH when wrong content-type", (done) ->
 
     req = request
-      url: g.location
+      url: "#{addr}#{g.location}"
       method: 'PATCH',
       headers:
         'Content-Type': 'application/json'
@@ -83,7 +83,7 @@ module.exports = (g) ->
   it "must not PATCH when offset missing", (done) ->
 
     req = request
-      url: g.location
+      url: "#{addr}#{g.location}"
       method: 'PATCH',
       headers:
         'Content-Type': 'application/offset+octet-stream'
@@ -103,7 +103,7 @@ module.exports = (g) ->
   it "must not upload the rest of da file when offset wrong", (done) ->
 
     req = request
-      url: g.location
+      url: "#{addr}#{g.location}"
       method: 'PATCH',
       headers:
         'Content-Type': 'application/offset+octet-stream'
@@ -124,7 +124,7 @@ module.exports = (g) ->
   it "must not PATCH when offset bigger then current", (done) ->
 
     req = request
-      url: g.location
+      url: "#{addr}#{g.location}"
       method: 'PATCH',
       headers:
         'Content-Type': 'application/offset+octet-stream'
@@ -145,7 +145,7 @@ module.exports = (g) ->
   it "shall upload the rest of da file", (done) ->
 
     req = request
-      url: g.location
+      url: "#{addr}#{g.location}"
       method: 'PATCH',
       headers:
         'Content-Type': 'application/offset+octet-stream'
@@ -171,7 +171,7 @@ module.exports = (g) ->
   it "shall return offset equal to file size", (done) ->
 
     request
-      url: g.location
+      url: "#{addr}#{g.location}"
       method: 'HEAD',
       headers:
         'Tus-Resumable': '1.0.0'
@@ -181,14 +181,14 @@ module.exports = (g) ->
       res.statusCode.should.eql 200
       should.exist res.headers['upload-offset']
       res.headers['upload-offset'].should.eql g.samplefile.length.toString()
-      g.filename = /https?:\/\/127.0.0.1:[0-9]*\/(.*)/g.exec(g.location)[1]
-      filename = "#{process.env.FILESDIR}/#{g.filename}"
+      g.filename = /\/(.*)/g.exec(g.location)[1]
+      filename = "#{process.env.FILESDIR}/#{g.location}"
       fs.readFileSync(filename).toString().should.eql g.samplefile
       done()
 
 
   it "shall return actual file", (done) ->
-    request.get g.location, (err, res, body) ->
+    request.get "#{addr}#{g.location}", (err, res, body) ->
       return done(err) if err
 
       res.statusCode.should.eql 200

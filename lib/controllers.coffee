@@ -37,6 +37,7 @@ module.exports = (UploadModel) ->
 
     _fileInfo.load req.params.id, (err, fleInfo)->
       return res.status(400).send(err) if err
+      return res.status(404).send("Not Found") if not fleInfo
 
       if fleInfo.offset != fleInfo.final_length
         return res.status(404).send("Not Found")
@@ -69,19 +70,24 @@ module.exports = (UploadModel) ->
     if fileId.indexOf('..') >= 0
       return res.status(400).send("Bad fileName")
 
-    _fileInfo.create fileId, uploadLength, (err, fileInfo)->
+    _fileInfo.load fileId, (err, info)->
       return res.status(400).send(err) if err
+      # redir if already
+      return res.status(302).send(Utils.getFileUrl(fileId, req)) if info
 
-      fileAbs = path.join(filesDir, fileId)
-      folder = path.dirname(fileAbs)
-      mkdirp.sync folder unless fs.existsSync folder
-      touch fileAbs, {}, (err) ->
+      _fileInfo.create fileId, uploadLength, (err, fileInfo)->
         return res.status(400).send(err) if err
 
-        location = Utils.getFileUrl(fileId, req)
-        res.setHeader "Location", location
-        res.setHeader "tus-resumable", "1.0.0"
-        res.status(201).send("Created")
+        fileAbs = path.join(filesDir, fileId)
+        folder = path.dirname(fileAbs)
+        mkdirp.sync folder unless fs.existsSync folder
+        touch fileAbs, {}, (err) ->
+          return res.status(400).send(err) if err
+
+          location = Utils.getFileUrl(fileId, req)
+          res.setHeader "Location", location
+          res.setHeader "tus-resumable", "1.0.0"
+          res.status(201).send("Created")
 
 
   #Implements 5.3.1. HEAD

@@ -120,9 +120,9 @@ module.exports = (addr, g) ->
       should.exist res.headers['location']
       done()
 
+  fileName = "sub1/sub2/testfile1.txt"
 
   it "shall create a new file with custom filename in subfolder", (done) ->
-    fileName = "sub1/sub2/testfile1.txt"
 
     req = request
       url: "#{addr}/"
@@ -139,6 +139,26 @@ module.exports = (addr, g) ->
       should.exist res.headers['location']
       g.locationWithPath = res.headers['location']
       done()
+
+
+    it "must create an existing file again", (done) ->
+
+      request
+        url: "#{addr}/"
+        method: 'POST',
+        headers:
+          'Content-Type': 'application/json'
+          'Upload-Metadata': 'filename ' + new Buffer(fileName).toString('base64')
+          'Upload-Length': g.samplefile2.length
+          'Tus-Resumable': '1.0.0'
+      , (err, res, body) ->
+        return done(err) if err
+
+        res.statusCode.should.eql 201
+        should.exist res.headers['location']
+        should.exist res.headers['tus-resumable']
+        res.headers['location'].should.eql g.locationWithPath
+        done()
 
 
   it "mustnot create a new file out of upload folder (usage ../..)", (done) ->
