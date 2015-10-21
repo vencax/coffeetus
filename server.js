@@ -3,13 +3,15 @@ require('coffee-script/register');
 
 var port = process.env.PORT || 1080;
 
-var app = require('express')();
+require('./lib/db')(function(err, db) {
 
-require('./lib/db')(function(db) {
+  if(err) { console.log(err); return; }
 
-  require('./index').initApp(app, db)
+  var app = require('express')();
+  require('./index')(db).initApp(app)
 
   app.listen(port, function() {
     console.log('gandalf does magic on ' + port);
   });
+
 });

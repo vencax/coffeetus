@@ -22,6 +22,12 @@ module.exports = (UploadModel) ->
 
   _fileInfo = FileInfo(UploadModel)
 
+  getInfo: (file, cb) ->
+    _fileInfo.load file, (err, fleInfo) ->
+      return cb(err) if err
+      cb(null, fleInfo)
+
+
   #GET MUST return Content-Length == Final-Length
   getFile: (req, res, next) ->
     return res.status(404).send("Not Found") unless req.params.id?

@@ -25,7 +25,9 @@ describe "app", ->
 
     Db (err, db)->
       return done(err) if err
-      appModule.initApp(g.app, db)
+
+      g.appModule = appModule(db)
+      g.appModule.initApp(g.app)
 
       g.server = g.app.listen port, (err) ->
         return done(err) if err
@@ -40,4 +42,4 @@ describe "app", ->
   baseurl = "http://127.0.0.1:#{port}"
 
   # require('./uploads')(g.db, baseurl)
-  One00(g.db, baseurl)
+  One00(g, baseurl)

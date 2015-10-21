@@ -2,7 +2,7 @@
   "name": "coffeetus",
   "author": "Vaclav Klecanda <vencax@vxk.com>",
   "description": "TUS Server Implementation for TUS 1.0.0",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "server.js",
   "dependencies": {
     "coffee-script": "^1.9.3",

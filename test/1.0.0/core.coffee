@@ -169,7 +169,7 @@ module.exports = (g) ->
 
 
   it "shall return offset equal to file size", (done) ->
-    
+
     request
       url: g.location
       method: 'HEAD',
@@ -181,8 +181,8 @@ module.exports = (g) ->
       res.statusCode.should.eql 200
       should.exist res.headers['upload-offset']
       res.headers['upload-offset'].should.eql g.samplefile.length.toString()
-      filename = /https?:\/\/127.0.0.1:[0-9]*\/(.*)/g.exec(g.location)[1]
-      filename = "#{process.env.FILESDIR}/#{filename}"
+      g.filename = /https?:\/\/127.0.0.1:[0-9]*\/(.*)/g.exec(g.location)[1]
+      filename = "#{process.env.FILESDIR}/#{g.filename}"
       fs.readFileSync(filename).toString().should.eql g.samplefile
       done()
 
@@ -194,4 +194,13 @@ module.exports = (g) ->
       res.statusCode.should.eql 200
       # res.headers['content-type'].should.eql 'plain/text'
       body.should.eql g.samplefile
+      done()
+
+
+  it "shall return file info", (done) ->
+    g.appModule.getInfo g.filename, (err, info) ->
+      return done(err) if err
+
+      info.id.should.eql g.filename
+      info.final_length.should.eql g.samplefile.length
       done()

@@ -12,26 +12,21 @@ corsOpts =
   exposedHeaders: ["Location", "Upload-Offset"]
 
 
-exports.initApp = (app, db) ->
+module.exports = (db) ->
 
   controllers = Controllers(db.models.upload)
 
-  app.options('/', controllers.serverInfo)
+  _initApp = (app) ->
+    app.options('/', controllers.serverInfo)
 
-  app.use cors(corsOpts)
+    app.use cors(corsOpts)
 
-  app.post("/", controllers.checkVersion, controllers.createFile)
-  app.head("/:id(*)", controllers.checkVersion, controllers.headFile)
-  app.get("/:id(*)", controllers.getFile)
-  app.patch("/:id(*)", controllers.checkVersion, controllers.patchFile)
-  app.delete("/:id(*)", controllers.checkVersion, controllers.terminate)
+    app.post("/", controllers.checkVersion, controllers.createFile)
+    app.head("/:id(*)", controllers.checkVersion, controllers.headFile)
+    app.get("/:id(*)", controllers.getFile)
+    app.patch("/:id(*)", controllers.checkVersion, controllers.patchFile)
+    app.delete("/:id(*)", controllers.checkVersion, controllers.terminate)
 
 
-exports.getInfo = (file, req, cb) ->
-  u = upload.Upload({files: filesDir}, file)
-  status = u.load()
-  return cb status.error if status.error?
-
-  status.info.filepath = path.join filesDir, file
-  status.url = upload.getFileUrl(file, req)
-  cb null, status.info
+  initApp: _initApp
+  getInfo: controllers.getInfo
