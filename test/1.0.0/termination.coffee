@@ -1,6 +1,7 @@
 
 should = require('should')
 fs = require('fs')
+path = require 'path'
 request = require('request').defaults({timeout: 5000})
 
 ###
@@ -35,6 +36,7 @@ module.exports = (addr, g) ->
 
       res.statusCode.should.eql 204
       should.exist res.headers['tus-resumable']
+      fs.existsSync(path.join process.env.FILESDIR, g.locationWithPath).should.eql false
       done()
 
 
