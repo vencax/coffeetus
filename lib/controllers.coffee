@@ -33,14 +33,14 @@ module.exports = (UploadModel) ->
 
   #GET MUST return Content-Length == Final-Length
   getFile: (req, res, next) ->
-    return res.status(404).send("Not Found") unless req.params.id?
+    return res.status(404).send("id missing") unless req.params.id?
 
     _fileInfo.load req.params.id, (err, fleInfo)->
       return res.status(400).send(err) if err
-      return res.status(404).send("Not Found") if not fleInfo
+      return res.status(404).send("metas not found") if not fleInfo
 
       if fleInfo.offset != fleInfo.final_length
-        return res.status(404).send("Not Found")
+        return res.status(404).send("uncomplete")
 
       res.setHeader "Content-Length", fleInfo.final_length
       stream = fs.createReadStream(path.join(filesDir, req.params.id))
